@@ -108,12 +108,19 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
 
     var channel: FlutterMethodChannel
     #if os(OSX)
+      let taskQueue = registrar.messenger.makeBackgroundTaskQueue()
       channel = FlutterMethodChannel(
-        name: "plugin.csdcorp.com/speech_to_text", binaryMessenger: registrar.messenger)
+        name: "plugin.csdcorp.com/speech_to_text", 
+        binaryMessenger: registrar.messenger,
+        codec: FlutterStandardMethodCodec.sharedInstance,
+        taskQueue: taskQueue)
     #else
+      let taskQueue = registrar.messenger().makeBackgroundTaskQueue()
       channel = FlutterMethodChannel(
-        name: "plugin.csdcorp.com/speech_to_text", binaryMessenger: registrar.messenger())
-
+        name: "plugin.csdcorp.com/speech_to_text", 
+        binaryMessenger: registrar.messenger(),
+        codec: FlutterStandardMethodCodec.sharedInstance(),
+        taskQueue: taskQueue)
     #endif
 
     let instance = SpeechToTextPlugin(channel, registrar: registrar)
@@ -140,14 +147,12 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         let autoPunctuation = argsArr["autoPunctuation"] as? Bool,
         let enableHaptics = argsArr["enableHaptics"] as? Bool
       else {
-        DispatchQueue.main.async {
-          result(
-            FlutterError(
-              code: SpeechToTextErrors.missingOrInvalidArg.rawValue,
-              message:
-                "Missing arg partialResults, onDevice, listenMode, autoPunctuatio, enableHaptics and sampleRate are required",
-              details: nil))
-        }
+        result(
+          FlutterError(
+            code: SpeechToTextErrors.missingOrInvalidArg.rawValue,
+            message:
+              "Missing arg partialResults, onDevice, listenMode, autoPunctuatio, enableHaptics and sampleRate are required",
+            details: nil))
         return
       }
       var localeStr: String? = nil
@@ -155,13 +160,11 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         localeStr = localeParam
       }
       guard let listenMode = ListenMode(rawValue: listenModeIndex) else {
-        DispatchQueue.main.async {
-          result(
-            FlutterError(
-              code: SpeechToTextErrors.missingOrInvalidArg.rawValue,
-              message: "invalid value for listenMode, must be 0-2, was \(listenModeIndex)",
-              details: nil))
-        }
+        result(
+          FlutterError(
+            code: SpeechToTextErrors.missingOrInvalidArg.rawValue,
+            message: "invalid value for listenMode, must be 0-2, was \(listenModeIndex)",
+            details: nil))
         return
       }
 
@@ -177,9 +180,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
       locales(result)
     default:
       os_log("Unrecognized method: %{PUBLIC}@", log: pluginLog, type: .error, call.method)
-      DispatchQueue.main.async {
-        result(FlutterMethodNotImplemented)
-      }
+      result(FlutterMethodNotImplemented)
     }
   }
 
@@ -192,9 +193,8 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
       has = has && AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
     #endif
 
-    DispatchQueue.main.async {
-      result(has)
-    }
+    // Using the task queue, no need to dispatch to main thread
+    result(has)
   }
 
   private func initialize(_ result: @escaping FlutterResult) {
@@ -244,9 +244,8 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
   }
 
   fileprivate func sendBoolResult(_ value: Bool, _ result: @escaping FlutterResult) {
-    DispatchQueue.main.async {
-      result(value)
-    }
+    // Using the task queue, no need to dispatch to main thread
+    result(value)
   }
 
   fileprivate func setupListeningSound() {
@@ -628,9 +627,8 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
         localeNames.append(idName)
       }
     }
-    DispatchQueue.main.async {
-      result(localeNames)
-    }
+    // Using the task queue, no need to dispatch to main thread
+    result(localeNames)
   }
 
   private func buildIdNameForLocale(forIdentifier: String) -> String? {
@@ -676,6 +674,7 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
     if method != SwiftSpeechToTextCallbackMethods.soundLevelChange {
       os_log("invokeFlutter %{PUBLIC}@", log: pluginLog, type: .debug, method.rawValue)
     }
+    // Channel methods from native to Flutter must be called on the main thread
     DispatchQueue.main.async {
       self.channel.invokeMethod(method.rawValue, arguments: arguments)
     }
