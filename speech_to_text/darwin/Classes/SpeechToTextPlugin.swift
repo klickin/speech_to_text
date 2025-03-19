@@ -108,19 +108,31 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
 
     var channel: FlutterMethodChannel
     #if os(OSX)
-      let taskQueue = registrar.messenger.makeBackgroundTaskQueue()
-      channel = FlutterMethodChannel(
-        name: "plugin.csdcorp.com/speech_to_text", 
-        binaryMessenger: registrar.messenger,
-        codec: FlutterStandardMethodCodec.sharedInstance,
-        taskQueue: taskQueue)
+      if let taskQueue = registrar.messenger.makeBackgroundTaskQueue() {
+        channel = FlutterMethodChannel(
+          name: "plugin.csdcorp.com/speech_to_text", 
+          binaryMessenger: registrar.messenger,
+          codec: FlutterStandardMethodCodec.sharedInstance,
+          taskQueue: taskQueue)
+      } else {
+        channel = FlutterMethodChannel(
+          name: "plugin.csdcorp.com/speech_to_text", 
+          binaryMessenger: registrar.messenger)
+      }
     #else
-      let taskQueue = registrar.messenger().makeBackgroundTaskQueue()
-      channel = FlutterMethodChannel(
-        name: "plugin.csdcorp.com/speech_to_text", 
-        binaryMessenger: registrar.messenger(),
-        codec: FlutterStandardMethodCodec.sharedInstance(),
-        taskQueue: taskQueue)
+      // The makeBackgroundTaskQueue method returns an optional, so we need a safe unwrap
+      if let taskQueue = registrar.messenger().makeBackgroundTaskQueue() {
+        channel = FlutterMethodChannel(
+          name: "plugin.csdcorp.com/speech_to_text", 
+          binaryMessenger: registrar.messenger(),
+          codec: FlutterStandardMethodCodec.sharedInstance(),
+          taskQueue: taskQueue)
+      } else {
+        // Fall back to regular channel if task queue is not available
+        channel = FlutterMethodChannel(
+          name: "plugin.csdcorp.com/speech_to_text", 
+          binaryMessenger: registrar.messenger())
+      }
     #endif
 
     let instance = SpeechToTextPlugin(channel, registrar: registrar)
