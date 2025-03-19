@@ -108,7 +108,9 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
 
     var channel: FlutterMethodChannel
     #if os(OSX)
-      if let taskQueue = registrar.messenger.makeBackgroundTaskQueue() {
+      let taskQueueMaker = registrar.messenger.makeBackgroundTaskQueue()
+      if let taskQueueMaker = taskQueueMaker {
+        let taskQueue = taskQueueMaker()
         channel = FlutterMethodChannel(
           name: "plugin.csdcorp.com/speech_to_text", 
           binaryMessenger: registrar.messenger,
@@ -120,8 +122,10 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
           binaryMessenger: registrar.messenger)
       }
     #else
-      // The makeBackgroundTaskQueue method returns an optional, so we need a safe unwrap
-      if let taskQueue = registrar.messenger().makeBackgroundTaskQueue() {
+      // The makeBackgroundTaskQueue method returns an optional function that returns a FlutterTaskQueue
+      let taskQueueMaker = registrar.messenger().makeBackgroundTaskQueue()
+      if let taskQueueMaker = taskQueueMaker {
+        let taskQueue = taskQueueMaker()
         channel = FlutterMethodChannel(
           name: "plugin.csdcorp.com/speech_to_text", 
           binaryMessenger: registrar.messenger(),
