@@ -123,20 +123,27 @@ public class SpeechToTextPlugin: NSObject, FlutterPlugin {
       }
     #else
       // The makeBackgroundTaskQueue method returns an optional function that returns a FlutterTaskQueue
-      let taskQueueMaker = registrar.messenger().makeBackgroundTaskQueue()
-      if let taskQueueMaker = taskQueueMaker {
-        let taskQueue = taskQueueMaker()
-        channel = FlutterMethodChannel(
-          name: "plugin.csdcorp.com/speech_to_text", 
+      let taskQueue = registrar.messenger().makeBackgroundTaskQueue?()
+       channel = FlutterMethodChannel(
+          name: "plugin.csdcorp.com/speech_to_text",
           binaryMessenger: registrar.messenger(),
           codec: FlutterStandardMethodCodec.sharedInstance(),
           taskQueue: taskQueue)
-      } else {
-        // Fall back to regular channel if task queue is not available
-        channel = FlutterMethodChannel(
-          name: "plugin.csdcorp.com/speech_to_text", 
-          binaryMessenger: registrar.messenger())
-      }
+      
+      
+//      if let taskQueueMaker = taskQueueMaker {
+//        let taskQueue = taskQueueMaker()
+//        channel = FlutterMethodChannel(
+//          name: "plugin.csdcorp.com/speech_to_text", 
+//          binaryMessenger: registrar.messenger(),
+//          codec: FlutterStandardMethodCodec.sharedInstance(),
+//          taskQueue: taskQueue)
+//      } else {
+//        // Fall back to regular channel if task queue is not available
+//        channel = FlutterMethodChannel(
+//          name: "plugin.csdcorp.com/speech_to_text", 
+//          binaryMessenger: registrar.messenger())
+//      }
     #endif
 
     let instance = SpeechToTextPlugin(channel, registrar: registrar)
